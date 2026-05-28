@@ -8,16 +8,16 @@
 project-coredvd
 ├── LICENSE
 ├── README.md
-├── docs.md
 ├── asm.py
 ├── convert.py
+├── docs.md
 ├── firmware
 │   ├── Pulse
-|   |   ├── docs.md
-|   |   └── firmware.asm
-|   └── z80
-|       ├── docs.md
-|       └── firmware.asm
+│   │   ├── docs.md
+│   │   └── firmware.asm
+│   └── z80
+│       ├── docs.md
+│       └── firmware.asm
 └── src
     └── main.cpp
 ```
