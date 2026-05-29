@@ -3,8 +3,6 @@ name: build coredvd
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
   workflow_dispatch:
 
 jobs:
@@ -55,6 +53,8 @@ jobs:
       shell: msys2 {0}
       run: |
         g++ src/main.cpp -o coredvd-windows.exe \
+          -I/mingw64/include \
+          -L/mingw64/lib \
           -lsfml-graphics -lsfml-window -lsfml-system \
           -lavformat -lavcodec -lswscale -lavutil \
           -static-libgcc -static-libstdc++ \
@@ -75,9 +75,20 @@ jobs:
       run: |
         brew install sfml ffmpeg
     
+    - name: get include paths
+      run: |
+        echo "SFML_INCLUDE=$(brew --prefix sfml)/include" >> $GITHUB_ENV
+        echo "SFML_LIB=$(brew --prefix sfml)/lib" >> $GITHUB_ENV
+        echo "FFMPEG_INCLUDE=$(brew --prefix ffmpeg)/include" >> $GITHUB_ENV
+        echo "FFMPEG_LIB=$(brew --prefix ffmpeg)/lib" >> $GITHUB_ENV
+    
     - name: compile
       run: |
         g++ src/main.cpp -o coredvd-macos \
+          -I${{ env.SFML_INCLUDE }} \
+          -I${{ env.FFMPEG_INCLUDE }} \
+          -L${{ env.SFML_LIB }} \
+          -L${{ env.FFMPEG_LIB }} \
           -lsfml-graphics -lsfml-window -lsfml-system \
           -lavformat -lavcodec -lswscale -lavutil \
           -lpthread -std=c++17 -O2
