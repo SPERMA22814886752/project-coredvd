@@ -5,10 +5,9 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
-  workflow_dispatch:  # Ручной запуск
+  workflow_dispatch:
 
 jobs:
-  # ========== LINUX NATIVE ==========
   linux:
     runs-on: ubuntu-latest
     steps:
@@ -36,61 +35,6 @@ jobs:
         name: coredvd-linux
         path: coredvd-linux
 
-  # ========== LINUX APPIMAGE ==========
-  appimage:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Install dependencies
-      run: |
-        sudo apt update
-        sudo apt install -y \
-          libsfml-dev \
-          libavformat-dev \
-          libavcodec-dev \
-          libswscale-dev \
-          libavutil-dev \
-          file \
-          wget
-    
-    - name: Compile static
-      run: |
-        g++ main.cpp -o coredvd \
-          -lsfml-graphics -lsfml-window -lsfml-system \
-          -lavformat -lavcodec -lswscale -lavutil \
-          -lpthread -std=c++17 -O2 \
-          -static-libgcc -static-libstdc++ \
-          -static
-    
-    - name: Prepare AppDir
-      run: |
-        mkdir -p AppDir/usr/bin
-        cp coredvd AppDir/usr/bin/
-        # Создаём десктоп-файл
-        cat > AppDir/coredvd.desktop << EOF
-        [Desktop Entry]
-        Name=coreDVD
-        Exec=coredvd
-        Type=Application
-        Categories=AudioVideo;Player;
-        EOF
-    
-    - name: Download linuxdeploy
-      run: |
-        wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
-        chmod +x linuxdeploy-x86_64.AppImage
-    
-    - name: Build AppImage
-      run: |
-        ./linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage
-    
-    - uses: actions/upload-artifact@v4
-      with:
-        name: coredvd-appimage
-        path: coredvd-*.AppImage
-
-  # ========== WINDOWS ==========
   windows:
     runs-on: windows-latest
     steps:
@@ -120,7 +64,6 @@ jobs:
         name: coredvd-windows
         path: coredvd-windows.exe
 
-  # ========== macOS ==========
   macos:
     runs-on: macos-latest
     steps:
@@ -141,31 +84,3 @@ jobs:
       with:
         name: coredvd-macos
         path: coredvd-macos
-
-  # ========== FreeBSD (через виртуалку) ==========
-  freebsd:
-    runs-on: macos-latest 
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup FreeBSD VM
-      uses: vmactions/freebsd-vm@v1
-      with:
-        usesh: true
-        prepare: |
-          pkg install -y sfml ffmpeg gmake
-    
-    - name: Compile in FreeBSD
-      uses: vmactions/freebsd-vm@v1
-      with:
-        usesh: true
-        run: |
-          g++ main.cpp -o coredvd-freebsd \
-            -lsfml-graphics -lsfml-window -lsfml-system \
-            -lavformat -lavcodec -lswscale -lavutil \
-            -lpthread -std=c++17 -O2
-    
-    - uses: actions/upload-artifact@v4
-      with:
-        name: coredvd-freebsd
-        path: coredvd-freebsd
