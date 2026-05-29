@@ -1,7 +1,9 @@
-name: Build coreDVD
+name: build coredvd
 
 on:
   push:
+    branches: [ main, master ]
+  pull_request:
     branches: [ main, master ]
   workflow_dispatch:
 
@@ -11,18 +13,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: List all files
-      run: |
-        echo "=== Current directory ==="
-        pwd
-        echo "=== All files ==="
-        ls -la
-        echo "=== Find all .cpp files ==="
-        find . -name "*.cpp" -type f
-        echo "=== Find main.cpp specifically ==="
-        find . -name "main.cpp" -type f
-    
-    - name: Install dependencies
+    - name: install dependencies
       run: |
         sudo apt update
         sudo apt install -y \
@@ -32,30 +23,95 @@ jobs:
           libswscale-dev \
           libavutil-dev
     
-    - name: Compile
+    - name: compile
       run: |
-        # Пробуем разные варианты
-        if [ -f "src/main.cpp" ]; then
-          g++ src/main.cpp -o coredvd-linux \
-            -lsfml-graphics -lsfml-window -lsfml-system \
-            -lavformat -lavcodec -lswscale -lavutil \
-            -lpthread -std=c++17 -O2
-        elif [ -f "main.cpp" ]; then
-          g++ main.cpp -o coredvd-linux \
-            -lsfml-graphics -lsfml-window -lsfml-system \
-            -lavformat -lavcodec -lswscale -lavutil \
-            -lpthread -std=c++17 -O2
-        elif [ -f "src/main.c" ]; then
-          g++ src/main.c -o coredvd-linux \
-            -lsfml-graphics -lsfml-window -lsfml-system \
-            -lavformat -lavcodec -lswscale -lavutil \
-            -lpthread -std=c++17 -O2
-        else
-          echo "No main.cpp found!"
-          exit 1
-        fi
+        g++ src/main.cpp -o coredvd-linux \
+          -lsfml-graphics -lsfml-window -lsfml-system \
+          -lavformat -lavcodec -lswscale -lavutil \
+          -lpthread -std=c++17 -O2
     
-    - uses: actions/upload-artifact@v4
+    - name: upload artifact
+      uses: actions/upload-artifact@v4
       with:
         name: coredvd-linux
         path: coredvd-linux
+
+  windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: setup msys2
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: mingw64
+        update: true
+        install: |
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-sfml
+          mingw-w64-x86_64-ffmpeg
+    
+    - name: compile
+      shell: msys2 {0}
+      run: |
+        g++ src/main.cpp -o coredvd-windows.exe \
+          -lsfml-graphics -lsfml-window -lsfml-system \
+          -lavformat -lavcodec -lswscale -lavutil \
+          -static-libgcc -static-libstdc++ \
+          -lpthread -std=c++17 -O2
+    
+    - name: upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: coredvd-windows
+        path: coredvd-windows.exe
+
+  macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: install dependencies
+      run: |
+        brew install sfml ffmpeg
+    
+    - name: compile
+      run: |
+        g++ src/main.cpp -o coredvd-macos \
+          -lsfml-graphics -lsfml-window -lsfml-system \
+          -lavformat -lavcodec -lswscale -lavutil \
+          -lpthread -std=c++17 -O2
+    
+    - name: upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: coredvd-macos
+        path: coredvd-macos
+
+  freebsd:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: setup freebsd vm
+      uses: vmactions/freebsd-vm@v1
+      with:
+        usesh: true
+        prepare: |
+          pkg install -y sfml ffmpeg gmake
+    
+    - name: compile in freebsd
+      uses: vmactions/freebsd-vm@v1
+      with:
+        usesh: true
+        run: |
+          g++ src/main.cpp -o coredvd-freebsd \
+            -lsfml-graphics -lsfml-window -lsfml-system \
+            -lavformat -lavcodec -lswscale -lavutil \
+            -lpthread -std=c++17 -O2
+    
+    - name: upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: coredvd-freebsd
+        path: coredvd-freebsd
